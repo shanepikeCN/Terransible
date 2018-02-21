@@ -1,4 +1,14 @@
+# Selecting region to deploy
 provider "aws" {
-  region = "${var.aws_region}"
-  profile = "${var.aws_profile}"
+  region = "us-east-1"
+}
+
+
+resource "aws_instance" "example" {
+  ami = "ami-2d39803a"
+  instance_type = "t2.micro"
+
+  tags {
+    Name = "terraform-example"
+  }
 }
