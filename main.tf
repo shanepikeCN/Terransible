@@ -7,8 +7,9 @@ provider "aws" {
 # Setting up the SSH key
 resource "aws_key_pair" "deployer" {
   key_name = "deployer-key"
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDvFLqaQN4zvLhC8QGbNI22LsHnq+o07XVr6fm9MTjuPzNqJ05Unc7mL7xrCg7NxzrrJuKsrb47AoV1t6qx4IdFrHpsB1Eq9QXRuEQiK3mCqCv8W7w/MC1CXEpmtsBVpcBAwQats25Vjs4MF2dzaVMJ+71RfC1LDn6C72DpgNACP9pU0oBaw8m56SHqaHefIWYXQNuKDlMbo423VsIy7SA6kIoT1OQp0Mm+XTgbDpQlQzfmHVZ4yJSW9tYjRR9WsQ14yZHoSyRq52zVRddeM9DEQRL8Jshao4HlWeE3M2U89Ikc4td8lLIQqVILzi/SOICVqmY+S4HZ4S0be6UBwG3F aws_terraform_ssh_key"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDSfaPktvPwiMmWPLtjMu9hjiYzHgE1lP0a995M6E86yGkyxnFe7ZAksaD+nNm2awUeYK1I1txGSzW878yCamypto3Z1458o1tfIc9Lsp5MUfsBKKqpYn8jYqCXIxZAmHPhnZWIGY5i7sX99/oFR9zZpISNWJLQ6e///PbfmNMkAwW/iqy0AdZdXHPn7jzj3skn0KY2UI1Hb9viFfStTWvkkZ/Y3xACjKTUTtfMar/4lmRhjWv1BXi/ZJ8jR5sRcN/c4YUgE7J93d756joivoOeny2MB/pl+h6VLR1HBaAL8L/11/ZWC7FanUL7W4eTF/ePHih+uuk0bs85uTXxzxCN aws_terraform_ssh_key"
 }
+
 
 resource "aws_instance" "example" {
   ami = "ami-2d39803a"

@@ -1,5 +1,5 @@
 variable "aws_profile" {
-  default = "superhero"
+  default = "default"
 }
 variable "server_port" {
 	description = "The port the servers will use for HTTP requests"

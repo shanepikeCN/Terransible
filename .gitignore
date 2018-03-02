@@ -4,3 +4,4 @@
 /terraform.tfvars
 # Module directory
 .terraform/
+keys/
