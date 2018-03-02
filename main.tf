@@ -55,6 +55,7 @@ resource "aws_launch_configuration" "example" {
 
 resource "aws_autoscaling_group" "example" {
   launch_configuration = "${aws_launch_configuration.example.id}"
+  availability_zones = ["${data.aws_availability_zones.all.names}"]
   min_size = 2
   max_size = 2
   tag {
@@ -64,17 +65,29 @@ resource "aws_autoscaling_group" "example" {
   }
 }
 
-resource "aws_instance" "example" {
-  ami = "ami-2d39803a"
-  instance_type = "t2.micro"
-  vpc_security_group_ids = ["${aws_security_group.instance.id}"]
-  user_data = "${data.template_file.user_data.rendered}"
-  key_name = "deployer-key"
-
-  tags {
-    Name = "terraform-example"
+# Adding load balancer for EC2 instances
+resource "aws_elb" "example" {
+  name = "terraform-asg-example"
+  availability_zones = ["${data.aws_availability_zones.all.names}"]
+  listener {
+    lb_port = 80
+    lb_protocol = "http"
+    instance_port = "${var.server_port}"
+    instance_protocol = "http"
   }
 }
+
+#resource "aws_instance" "example" {
+#  ami = "ami-2d39803a"
+#  instance_type = "t2.micro"
+#  vpc_security_group_ids = ["${aws_security_group.instance.id}"]
+#  user_data = "${data.template_file.user_data.rendered}"
+#  key_name = "deployer-key"
+
+#  tags {
+#    Name = "terraform-example"
+#  }
+#}
 
 
 
