@@ -1,5 +1,0 @@
-aws_profile = "superhero"
-aws_region  = "us-east-1"
-server_port = "8080"
-secret_key = "/RIsnKDZtro8QByT9najnkq+C66DnvvBQpFxvfLv"
-access_key = "AKIAIEUZBL5EUB62KPCA"
