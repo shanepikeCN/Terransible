@@ -1,6 +1,6 @@
 # Compiled files
 *.tfstate
 *.tfstate.backup
-/home/user/Terransible/terraform.tfvars
+/terraform.tfvars
 # Module directory
 .terraform/
