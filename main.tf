@@ -16,11 +16,13 @@ data "aws_availability_zones" "all" {}
 
 #S3_access
 
+# Creating an instance profile to use S3 role 
 resource "aws_iam_instance_profile" "s3_access_profile" {
   name = "s3_access"
   role = "${aws_iam_role.s3_access_role.name}"
 }
 
+# Creating access policy for role (to provide access to S3)
 resource "aws_iam_role_policy" "s3_access_policy" {
   name = "s3_access_policy"
   role = "${aws_iam_role.s3_access_role.id}"
@@ -39,6 +41,7 @@ resource "aws_iam_role_policy" "s3_access_policy" {
 EOF
 }
 
+# Role to be assumed by EC2 instances
 resource "aws_iam_role" "s3_access_role" {
   name = "s3_access_role"
 
@@ -60,7 +63,27 @@ EOF
 }
 
 
+#-------------VPC-----------
 
+resource "aws_vpc" "wp_vpc" {
+  cidr_block           = "${var.vpc_cidr}"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags {
+    Name = "wp_vpc"
+  }
+}
+
+#internet gateway
+
+resource "aws_internet_gateway" "wp_internet_gateway" {
+  vpc_id = "${aws_vpc.wp_vpc.id}"
+
+  tags {
+    Name = "wp_igw"
+  }
+}
 
 
 /*
