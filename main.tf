@@ -16,7 +16,7 @@ data "aws_availability_zones" "all" {}
 
 #S3_access
 
-# Creating an instance profile to use S3 role 
+# Creating an instance profile to use S3 role
 resource "aws_iam_instance_profile" "s3_access_profile" {
   name = "s3_access"
   role = "${aws_iam_role.s3_access_role.name}"
@@ -75,8 +75,7 @@ resource "aws_vpc" "wp_vpc" {
   }
 }
 
-#internet gateway
-
+# Setting up IGW with our WP VPC
 resource "aws_internet_gateway" "wp_internet_gateway" {
   vpc_id = "${aws_vpc.wp_vpc.id}"
 
@@ -156,7 +155,7 @@ resource "aws_subnet" "wp_private2_subnet" {
   }
 }
 
-#create S3 VPC endpoint
+# Create S3 VPC endpoint for connections from the VPC to S3 resources
 resource "aws_vpc_endpoint" "wp_private-s3_endpoint" {
   vpc_id       = "${aws_vpc.wp_vpc.id}"
   service_name = "com.amazonaws.${var.aws_region}.s3"
@@ -179,6 +178,7 @@ resource "aws_vpc_endpoint" "wp_private-s3_endpoint" {
 POLICY
 }
 
+# Creating subnets for our databases
 resource "aws_subnet" "wp_rds1_subnet" {
   vpc_id                  = "${aws_vpc.wp_vpc.id}"
   cidr_block              = "${var.cidrs["rds1"]}"
@@ -286,7 +286,7 @@ resource "aws_security_group" "wp_public_sg" {
   description = "Used for public and private instances for load balancer access"
   vpc_id      = "${aws_vpc.wp_vpc.id}"
 
-  #HTTP 
+  #HTTP
 
   ingress {
     from_port   = 80
@@ -403,12 +403,12 @@ resource "aws_instance" "wp_dev" {
 
   provisioner "local-exec" {
     command = <<EOD
-cat <<EOF > aws_hosts 
-[dev] 
-${aws_instance.wp_dev.public_ip} 
-[dev:vars] 
+cat <<EOF > aws_hosts
+[dev]
+${aws_instance.wp_dev.public_ip}
+[dev:vars]
 s3code=${aws_s3_bucket.code.bucket}
-domain=${var.domain_name} 
+domain=${var.domain_name}
 EOF
 EOD
   }
@@ -454,15 +454,15 @@ resource "aws_elb" "wp_elb" {
   }
 }
 
-#AMI 
+#AMI
 
 resource "random_id" "golden_ami" {
   byte_length = 8
 }
 
 resource "aws_ami_from_instance" "wp_golden" {
-  name               = "wp_ami-${random_id.golden_ami.b64}"
-  source_instance_id = "${aws_instance.wp_dev.id}"
+  name               = "wp_ami-${random_id.golden_ami.b64}" # Base 64 for randomn string
+  source_instance_id = "${aws_instance.wp_dev.id}" # Using dev instance as source
 
   provisioner "local-exec" {
     command = <<EOT
@@ -492,7 +492,7 @@ resource "aws_launch_configuration" "wp_lc" {
   }
 }
 
-#ASG 
+#ASG
 
 #resource "random_id" "rand_asg" {
 # byte_length = 8
@@ -534,7 +534,7 @@ resource "aws_route53_zone" "primary" {
   delegation_set_id = "${var.delegation_set}"
 }
 
-#www 
+#www
 
 resource "aws_route53_record" "www" {
   zone_id = "${aws_route53_zone.primary.zone_id}"
@@ -548,7 +548,7 @@ resource "aws_route53_record" "www" {
   }
 }
 
-#dev 
+#dev
 
 resource "aws_route53_record" "dev" {
   zone_id = "${aws_route53_zone.primary.zone_id}"
@@ -565,7 +565,7 @@ resource "aws_route53_zone" "secondary" {
   vpc_id = "${aws_vpc.wp_vpc.id}"
 }
 
-#db 
+#db
 
 resource "aws_route53_record" "db" {
   zone_id = "${aws_route53_zone.secondary.zone_id}"
@@ -658,8 +658,8 @@ resource "aws_elb" "example" {
   name = "terraform-asg-example"
   security_groups = ["${aws_security_group.elb.id}"]
   availability_zones = ["${data.aws_availability_zones.all.names}"]
- 
-  # Health check will check port 8080 on EC2 instances every 30 seconds 
+
+  # Health check will check port 8080 on EC2 instances every 30 seconds
   health_check {
     healthy_threshold = 2
     unhealthy_threshold = 2
@@ -668,7 +668,7 @@ resource "aws_elb" "example" {
     target = "HTTP:${var.server_port}/"
   }
 
-  
+
   # LB will listen on port 80 and direct traffic to EC2 instances
   listener {
     lb_port = 80
