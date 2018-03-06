@@ -64,8 +64,8 @@ resource "aws_security_group" "elb" {
 }
 
 # Creating launch configuration to be used for auto scaling groups
-resource "aws_launch_configuration" "example" {
-  image_id = "ami-2d39803a"
+resource "aws_launch_configuration" "centos7_alc" {
+  image_id = "ami-4bf3d731" # Centos 7 AMI
   instance_type = "t2.micro"
   security_groups = ["${aws_security_group.instance.id}"]
   user_data = "${data.template_file.user_data.rendered}"
@@ -75,7 +75,7 @@ resource "aws_launch_configuration" "example" {
 }
 
 resource "aws_autoscaling_group" "example" {
-  launch_configuration = "${aws_launch_configuration.example.id}"
+  launch_configuration = "${aws_launch_configuration.centos7_alc.id}"
   availability_zones = ["${data.aws_availability_zones.all.names}"]
   min_size = 2
   max_size = 2
@@ -97,8 +97,8 @@ resource "aws_elb" "example" {
   name = "terraform-asg-example"
   security_groups = ["${aws_security_group.elb.id}"]
   availability_zones = ["${data.aws_availability_zones.all.names}"]
- 
-  # Health check will check port 8080 on EC2 instances every 30 seconds 
+
+  # Health check will check port 8080 on EC2 instances every 30 seconds
   health_check {
     healthy_threshold = 2
     unhealthy_threshold = 2
@@ -107,7 +107,7 @@ resource "aws_elb" "example" {
     target = "HTTP:${var.server_port}/"
   }
 
-  
+
   # LB will listen on port 80 and direct traffic to EC2 instances
   listener {
     lb_port = 80
