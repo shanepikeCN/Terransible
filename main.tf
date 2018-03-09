@@ -2,7 +2,7 @@
 provider "aws" {
   region = "${var.aws_region}"
 # Using locally stored SSH keys
-  shared_credentials_file = "/root/.aws/credentials"
+  shared_credentials_file = "~/.aws/credentials"
 }
 
 # Setting up the SSH key
@@ -24,17 +24,16 @@ resource "aws_security_group" "instance" {
   name = "terraform-example-instance"
 
   ingress {
-	from_port = "${var.server_port}"
-	to_port = "${var.server_port}"
-	protocol = "tcp"
-	cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
-
-  ingress {
-	from_port = "22"
-	to_port = "22"
-	protocol = "tcp"
-	cidr_blocks = ["0.0.0.0/0"]
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   lifecycle {
@@ -42,6 +41,7 @@ resource "aws_security_group" "instance" {
   }
 }
 
+/**
 # Security group for load balancer
 resource "aws_security_group" "elb" {
   name = "terraform-example-elb"
@@ -62,11 +62,40 @@ resource "aws_security_group" "elb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+**/
+resource "aws_instance" "wp_dev" {
+  instance_type = "${var.dev_instance_type}"
+  ami           = "${var.dev_ami}"
+
+  tags {
+    Name = "wp_dev"
+  }
+
+  associate_public_ip_address = true
+  key_name               = "deployer-key"
+  vpc_security_group_ids = ["${aws_security_group.instance.id}"]
+  #iam_instance_profile   = "${aws_iam_instance_profile.s3_access_profile.id}"
+  #subnet_id              = "${aws_subnet.wp_public1_subnet.id}"
+
+provisioner "local-exec" {
+  command = <<EOF
+  printf "[dev]\n${aws_instance.wp_dev.public_ip}\n[dev:vars]\ns3code=TEST" > aws_hosts
+EOF
+}
+provisioner "local-exec" {
+  command = "sleep 120"
+}
+
+#provisioner "local-exec" {
+#  command = "ansible-playbook -i aws_hosts wordpress.yml"
+#}
+}
 
 # Creating launch configuration to be used for auto scaling groups
+/**
 resource "aws_launch_configuration" "centos7_alc" {
-  image_id = "ami-4bf3d731" # Centos 7 AMI
-  instance_type = "t2.micro"
+  image_id = "${var.dev_ami}" # Centos 7 AMI
+  instance_type = "${var.dev_instance_type}"
   security_groups = ["${aws_security_group.instance.id}"]
   user_data = "${data.template_file.user_data.rendered}"
   lifecycle {
@@ -116,6 +145,7 @@ resource "aws_elb" "example" {
     instance_protocol = "http"
   }
 }
+**/
 
 #resource "aws_instance" "example" {
 #  ami = "ami-2d39803a"
@@ -131,10 +161,12 @@ resource "aws_elb" "example" {
 
 
 
-#output "public_ip" {
-#  value = "${aws_instance.example.public_ip}"
-#}
 
+/**
 output "elb_dns_name" {
   value = "${aws_elb.example.dns_name}"
+}
+**/
+output "public_ip" {
+  value = "${aws_instance.wp_dev.public_ip}"
 }
