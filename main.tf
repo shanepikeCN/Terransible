@@ -75,20 +75,18 @@ resource "aws_instance" "wp_dev" {
   key_name               = "deployer-key"
   vpc_security_group_ids = ["${aws_security_group.instance.id}"]
   #iam_instance_profile   = "${aws_iam_instance_profile.s3_access_profile.id}"
-  #subnet_id              = "${aws_subnet.wp_public1_subnet.id}"
+  #subnet_id                = "${aws_subnet.wp_public1_subnet.id}"
 
 provisioner "local-exec" {
   command = <<EOF
-  printf "[dev]\n${aws_instance.wp_dev.public_ip}\n[dev:vars]\ns3code=TEST" > aws_hosts
+  printf "[local]\n${aws_instance.wp_dev.public_ip}" > aws_hosts
 EOF
 }
+
 provisioner "local-exec" {
-  command = "sleep 120"
+ command = "sleep 120; ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook --user=ec2-user --private-key keys/id-rsa -i aws_hosts nginx.yml"
 }
 
-#provisioner "local-exec" {
-#  command = "ansible-playbook -i aws_hosts wordpress.yml"
-#}
 }
 
 # Creating launch configuration to be used for auto scaling groups
