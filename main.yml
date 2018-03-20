@@ -1,0 +1,20 @@
+# Example shows using the local machine still
+# Remove 'connection' and set hosts to 'remote' for a remote connection
+- hosts: nginx
+  become: yes
+  become_user: root
+  #become_method: sudo
+  gather_facts: False
+  vars:
+    - app_port: 5000
+
+  pre_tasks:
+    - name: Install Python
+      raw: test -e /usr/bin/python || (apt -qqy update && apt install -qy python-minimal)
+      register: pyinstalled
+
+    - name: Gather gather_facts
+      setup:
+
+  roles:
+    - nginxinc.nginx

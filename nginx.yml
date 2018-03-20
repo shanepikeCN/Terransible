@@ -3,9 +3,18 @@
 - hosts: local
   become: yes
   become_user: root
+  become_method: sudo
+  gather_facts: False
   vars:
    - docroot: /var/www/serversforhackers.com/public
   tasks:
+   - name: Install Python
+     apt:
+       name: python
+       state: installed
+     #raw: test -e /usr/bin/python || (apt -qqy update && apt install -qy python-minimal)
+     register: pyinstalled
+
    - name: Add Nginx Repository
      apt_repository:
        repo: deb http://ppa.launchpad.net/nginx/stable/ubuntu xenial main
@@ -18,7 +27,7 @@
        state: installed
        update_cache: true
        allow_unauthenticated: yes
-     when: ppastable|success
+     when: ppastable|success and pyinstalled|success
      notify:
       - Start Nginx
 

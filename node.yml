@@ -1,0 +1,57 @@
+# Example shows using the local machine still
+# Remove 'connection' and set hosts to 'remote' for a remote connection
+- hosts: app[0]
+  become: yes
+  become_user: root
+  become_method: sudo
+  gather_facts: False
+
+  vars:
+    - homeDir: /home/ubuntu
+    - appDir : app
+    - repo: my_app
+    - server_name: app
+
+
+  tasks:
+  - name: Install Python
+    raw: test -e /usr/bin/python || (apt -qqy update && apt install -qy python-minimal)
+      #state: installed
+    register: pyinstalled
+
+  - name: Install Packages
+    apt: name={{ item }} update_cache=yes state=latest
+    with_items:
+      - build-essential
+      - npm
+      - nodejs-legacy
+      - git
+      - mcrypt
+      - curl
+    when: pyinstalled|success
+
+  - name: Install pm2
+    npm: name=pm2 global=yes production=yes
+
+  - name: Create APP Directory
+    file: path={{homeDir}}/{{appDir}} state=directory
+
+  - name: Git Clone Repo
+    git: repo=https://github.com/heroku/node-js-sample.git dest={{homeDir}}/{{appDir}} update=yes force=yes accept_hostkey=yes
+    register: git_finished
+
+  - name: Running NPM install
+    npm: path={{homeDir}}/{{appDir}}/backened
+    register: npm_finished
+    when: git_finished|success
+
+  #- name: Stop APP
+  #  sudo_user: ubuntu
+  #  command: pm2 stop {{server_name}}
+  #  ignore_errors: yes
+
+  - name: Start APP
+    sudo_user: ubuntu
+    command: pm2 start {{homeDir}}/{{appDir}}/index.js --name {{server_name}} chdir={{homeDir}}/{{appDir}}/backened
+    ignore_errors: yes
+    when: npm_finished|success

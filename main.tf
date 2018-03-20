@@ -5,10 +5,9 @@ provider "aws" {
   shared_credentials_file = "~/.aws/credentials"
 }
 
-# Setting up the SSH key
 resource "aws_key_pair" "deployer" {
-  key_name = "deployer-key"
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDSfaPktvPwiMmWPLtjMu9hjiYzHgE1lP0a995M6E86yGkyxnFe7ZAksaD+nNm2awUeYK1I1txGSzW878yCamypto3Z1458o1tfIc9Lsp5MUfsBKKqpYn8jYqCXIxZAmHPhnZWIGY5i7sX99/oFR9zZpISNWJLQ6e///PbfmNMkAwW/iqy0AdZdXHPn7jzj3skn0KY2UI1Hb9viFfStTWvkkZ/Y3xACjKTUTtfMar/4lmRhjWv1BXi/ZJ8jR5sRcN/c4YUgE7J93d756joivoOeny2MB/pl+h6VLR1HBaAL8L/11/ZWC7FanUL7W4eTF/ePHih+uuk0bs85uTXxzxCN aws_terraform_ssh_key"
+  key_name   = "${var.key_name}"
+  public_key = "${file(var.public_key_path)}"
 }
 
 # Get list of availability zones
@@ -16,9 +15,9 @@ data "aws_availability_zones" "all" {}
 
 
 # Runs bootstrap shell script when EC2 instance is created
-data "template_file" "user_data" {
-  template = "${file("bootstrap.sh")}"
-}
+#data "template_file" "user_data" {
+#  template = "${file("bootstrap.sh")}"
+#}
 
 resource "aws_security_group" "instance" {
   name = "terraform-example-instance"
@@ -41,29 +40,7 @@ resource "aws_security_group" "instance" {
   }
 }
 
-/**
-# Security group for load balancer
-resource "aws_security_group" "elb" {
-  name = "terraform-example-elb"
-
-  # Allow outgoing traffic
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Allow incoming traffic to port 80
-  ingress {
-    from_port = 80
-    to_port = 80
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-**/
-resource "aws_instance" "wp_dev" {
+resource "aws_instance" "wp_app" {
   instance_type = "${var.dev_instance_type}"
   ami           = "${var.dev_ami}"
 
@@ -72,23 +49,52 @@ resource "aws_instance" "wp_dev" {
   }
 
   associate_public_ip_address = true
-  key_name               = "deployer-key"
+  key_name               = "${aws_key_pair.deployer.id}"
   vpc_security_group_ids = ["${aws_security_group.instance.id}"]
   #iam_instance_profile   = "${aws_iam_instance_profile.s3_access_profile.id}"
   #subnet_id                = "${aws_subnet.wp_public1_subnet.id}"
 
 provisioner "local-exec" {
   command = <<EOF
-  printf "[local]\n${aws_instance.wp_dev.public_ip}" > aws_hosts
+  printf "[app]\n${aws_instance.wp_app.public_ip}\n${aws_instance.wp_app.private_ip}\n" > aws_hosts
 EOF
 }
 
 provisioner "local-exec" {
- command = "sleep 120; ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook --user=ec2-user --private-key keys/id-rsa -i aws_hosts nginx.yml"
+ command = "sleep 120; ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook --user=ubuntu --private-key keys/aws_terraform -i aws_hosts node.yml"
 }
 
 }
 
+resource "aws_instance" "wp_lb" {
+  instance_type = "${var.dev_instance_type}"
+  ami           = "${var.dev_ami}"
+
+  tags {
+    Name = "wp_dev"
+  }
+
+  associate_public_ip_address = true
+  key_name               = "${aws_key_pair.deployer.id}"
+  vpc_security_group_ids = ["${aws_security_group.instance.id}"]
+  #iam_instance_profile   = "${aws_iam_instance_profile.s3_access_profile.id}"
+  #subnet_id                = "${aws_subnet.wp_public1_subnet.id}"
+
+provisioner "local-exec" {
+  command = <<EOF
+  printf "[nginx]\n${aws_instance.wp_lb.public_ip}\n" >> aws_hosts
+EOF
+}
+
+provisioner "local-exec" {
+ command = "sleep 120; ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook --user=ubuntu --private-key keys/aws_terraform -i aws_hosts main.yml"
+}
+
+  depends_on = ["aws_instance.wp_app"]
+}
+/**
+
+**/
 # Creating launch configuration to be used for auto scaling groups
 /**
 resource "aws_launch_configuration" "centos7_alc" {
@@ -145,18 +151,6 @@ resource "aws_elb" "example" {
 }
 **/
 
-#resource "aws_instance" "example" {
-#  ami = "ami-2d39803a"
-#  instance_type = "t2.micro"
-#  vpc_security_group_ids = ["${aws_security_group.instance.id}"]
-#  user_data = "${data.template_file.user_data.rendered}"
-#  key_name = "deployer-key"
-
-#  tags {
-#    Name = "terraform-example"
-#  }
-#}
-
 
 
 
@@ -165,6 +159,10 @@ output "elb_dns_name" {
   value = "${aws_elb.example.dns_name}"
 }
 **/
-output "public_ip" {
-  value = "${aws_instance.wp_dev.public_ip}"
+output "lb_ip" {
+  value = "${aws_instance.wp_lb.public_ip}"
+}
+
+output "app_ip" {
+  value = "${aws_instance.wp_app.public_ip}"
 }
