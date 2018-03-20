@@ -13,12 +13,6 @@ resource "aws_key_pair" "deployer" {
 # Get list of availability zones
 data "aws_availability_zones" "all" {}
 
-
-# Runs bootstrap shell script when EC2 instance is created
-#data "template_file" "user_data" {
-#  template = "${file("bootstrap.sh")}"
-#}
-
 resource "aws_security_group" "instance" {
   name = "terraform-example-instance"
 
@@ -91,6 +85,15 @@ provisioner "local-exec" {
 }
 
   depends_on = ["aws_instance.wp_app"]
+}
+
+resource "aws_launch_configuration" "centos7_alc" {
+  image_id = "${var.dev_ami}" # Centos 7 AMI
+  instance_type = "${var.dev_instance_type}"
+  security_groups = ["${aws_security_group.instance.id}"]
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 /**
 
