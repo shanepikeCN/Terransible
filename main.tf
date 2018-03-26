@@ -50,7 +50,7 @@ resource "aws_instance" "wp_app" {
 
 provisioner "local-exec" {
   command = <<EOF
-  printf "[app]\n${aws_instance.wp_app.public_ip}\n${aws_instance.wp_app.private_ip}\n" > aws_hosts
+  printf "[app]\n${aws_instance.wp_app.public_ip} private_ip=${aws_instance.wp_app.private_ip}\n" > aws_hosts
 EOF
 }
 
@@ -65,7 +65,7 @@ resource "aws_instance" "wp_lb" {
   ami           = "${var.dev_ami}"
 
   tags {
-    Name = "wp_dev"
+    Name = "wp_lb"
   }
 
   associate_public_ip_address = true
